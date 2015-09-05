@@ -1,0 +1,4 @@
+DriverClass=com.mysql.jdbc.Driver
+jdbcURL=jdbc:mysql://localhost:3306/OnlineEquipment
+user=root
+password=root
