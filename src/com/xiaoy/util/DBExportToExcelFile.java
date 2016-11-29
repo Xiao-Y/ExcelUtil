@@ -43,7 +43,7 @@ public class DBExportToExcelFile {
 	 * 
 	 * @return HSSFWorkbook
 	 */
-	@SuppressWarnings("rawtypes")
+	@SuppressWarnings({ "rawtypes", "deprecation" })
 	public HSSFWorkbook createWorkbook() {
 
 		workBook = new HSSFWorkbook();

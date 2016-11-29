@@ -26,7 +26,7 @@ public class MySQLConnection {
 		String password = null;
 
 		// 读取类路径下的jdbc.perproties文件
-		InputStream in = getClass().getClassLoader().getResourceAsStream("jdbc.perproties");
+		InputStream in = getClass().getClassLoader().getResourceAsStream("jdbc.properties");
 		Properties properties = new Properties();
 		properties.load(in);
 
