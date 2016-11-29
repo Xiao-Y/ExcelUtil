@@ -63,7 +63,7 @@ public class DBExportToExcelFile {
 				HSSFCell cell = headRow.createCell((short) j);
 				// 添加样式
 				cell.setCellType(HSSFCell.CELL_TYPE_STRING);
-				cell.setEncoding(HSSFCell.ENCODING_UTF_16);
+//				cell.setEncoding(HSSFCell.ENCODING_UTF_16);
 
 				// 2014-12-31 添加样式 begin
 				// 设置所有单元格的宽度
@@ -96,7 +96,7 @@ public class DBExportToExcelFile {
 				ArrayList rowList = (ArrayList) fieldData.get((i - 1) * SPLIT_COUNT + k);
 				for (int n = 0; n < rowList.size(); n++) {
 					HSSFCell cell = row.createCell((short) n);
-					cell.setEncoding(HSSFCell.ENCODING_UTF_16);
+//					cell.setEncoding(HSSFCell.ENCODING_UTF_16);
 					if (rowList.get(n) != null) {
 						cell.setCellValue((String) rowList.get(n).toString());
 					} else {

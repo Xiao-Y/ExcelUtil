@@ -7,7 +7,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.xiaoy.db.MySQLConnection;
+import com.xiaoy.db.JDBCUtil;
 import com.xiaoy.model.ZipModel;
 
 /**
@@ -25,12 +25,11 @@ public class ZipCRUD {
 	 * @throws SQLException
 	 */
 	public void saveListZip(List<ZipModel> zips) throws SQLException {
-		MySQLConnection mc = new MySQLConnection();
 		Connection connection = null;
 		PreparedStatement ps = null;
 		String sql = "insert into zip(id,name,parent_Id,short_name,level_Type,city_code,zip_code,merger_name,lng,lat,pinyin) values (?,?,?,?,?,?,?,?,?,?,?)";
 		try {
-			connection = mc.getConnection();
+			connection = JDBCUtil.getConnection();
 			ps = connection.prepareStatement(sql);
 			System.out.println("begin insert into...");
 			for (ZipModel z : zips) {
@@ -68,12 +67,11 @@ public class ZipCRUD {
 	 * @throws SQLException
 	 */
 	public List<ZipModel> getZipList() {
-		MySQLConnection mc = new MySQLConnection();
 		Connection connection = null;
 		PreparedStatement ps = null;
 		String sql = "select id,name,parent_Id,short_name,level_Type,city_code,zip_code,merger_name,lng,lat,pinyin from zip";
 		try {
-			connection = mc.getConnection();
+			connection = JDBCUtil.getConnection();
 			ps = connection.prepareStatement(sql);
 			ResultSet rs = ps.executeQuery();
 			List<ZipModel> list = new ArrayList<ZipModel>();
@@ -111,6 +109,24 @@ public class ZipCRUD {
 					e.printStackTrace();
 				}
 			}
+		}
+		return null;
+	}
+
+	/**
+	 * 查询所有的数据
+	 * 
+	 * @return
+	 * @throws SQLException
+	 */
+	public ResultSet getZipResultSet(Connection connection) {
+		String sql = "select id,name,parent_Id,short_name,level_Type,city_code,zip_code,merger_name,lng,lat,pin_yin from zip";
+		try {
+			PreparedStatement ps = connection.prepareStatement(sql);
+			ResultSet rs = ps.executeQuery();
+			return rs;
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 		return null;
 	}
