@@ -27,7 +27,7 @@ public class ZipCRUD {
 	public void saveListZip(List<ZipModel> zips) throws SQLException {
 		Connection connection = null;
 		PreparedStatement ps = null;
-		String sql = "insert into zip(id,name,parent_Id,short_name,level_Type,city_code,zip_code,merger_name,lng,lat,pinyin) values (?,?,?,?,?,?,?,?,?,?,?)";
+		String sql = "insert into zip(id,name,parent_Id,short_name,level_Type,city_code,zip_code,merger_name,lng,lat,pin_yin) values (?,?,?,?,?,?,?,?,?,?,?)";
 		try {
 			connection = JDBCUtil.getConnection();
 			ps = connection.prepareStatement(sql);
@@ -69,7 +69,7 @@ public class ZipCRUD {
 	public List<ZipModel> getZipList() {
 		Connection connection = null;
 		PreparedStatement ps = null;
-		String sql = "select id,name,parent_Id,short_name,level_Type,city_code,zip_code,merger_name,lng,lat,pinyin from zip";
+		String sql = "select id,name,parent_Id,short_name,level_Type,city_code,zip_code,merger_name,lng,lat,pin_yin from zip";
 		try {
 			connection = JDBCUtil.getConnection();
 			ps = connection.prepareStatement(sql);
@@ -121,6 +121,71 @@ public class ZipCRUD {
 	 */
 	public ResultSet getZipResultSet(Connection connection) {
 		String sql = "select id,name,parent_Id,short_name,level_Type,city_code,zip_code,merger_name,lng,lat,pin_yin from zip";
+		try {
+			PreparedStatement ps = connection.prepareStatement(sql);
+			ResultSet rs = ps.executeQuery();
+			return rs;
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	/**
+	 * 查询所有的数据List<Object[]>
+	 * 
+	 * @return
+	 * @throws SQLException
+	 */
+	public List<Object[]> getZipObjectList() {
+		Connection connection = null;
+		PreparedStatement ps = null;
+		String sql = "select id,name,parent_Id,short_name,level_Type,city_code,zip_code,merger_name,lng,lat,pin_yin from zip";
+		try {
+			connection = JDBCUtil.getConnection();
+			ps = connection.prepareStatement(sql);
+			ResultSet rs = ps.executeQuery();
+			List<Object[]> list = new ArrayList<>();
+			while (rs.next()) {
+				Object[] obj = new Object[11];
+				obj[0] = rs.getString(1);
+				obj[1] = rs.getString(2);
+				obj[2] = rs.getString(3);
+				obj[3] = rs.getString(4);
+				obj[4] = rs.getString(5);
+				obj[5] = rs.getString(6);
+				obj[6] = rs.getString(7);
+				obj[7] = rs.getString(8);
+				obj[8] = rs.getString(9);
+				obj[9] = rs.getString(10);
+				obj[10] = rs.getString(11);
+
+				list.add(obj);
+			}
+			return list;
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			if (ps != null) {
+				try {
+					ps.close();
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
+			}
+			if (connection != null) {
+				try {
+					connection.close();
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		return null;
+	}
+
+	public ResultSet getGwWfLogResultSet(Connection connection) {
+		String sql = "select * from clm_wf_log r";
 		try {
 			PreparedStatement ps = connection.prepareStatement(sql);
 			ResultSet rs = ps.executeQuery();

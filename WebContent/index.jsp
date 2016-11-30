@@ -7,6 +7,7 @@
 </head>
 <body>
 	<a href="${pageContext.request.contextPath }/LoadExecl">DOWNLOAD</a><br>
-	<a href="${pageContext.request.contextPath }/BigDataExport">BigDataExport</a>
+	<a href="${pageContext.request.contextPath }/BigDataExport">BigDataExport</a><br>
+	<a href="${pageContext.request.contextPath }/BigDataExport2">BigDataExport2</a><br>
 </body>
 </html>

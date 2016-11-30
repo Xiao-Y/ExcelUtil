@@ -30,13 +30,43 @@ import org.apache.commons.lang3.StringUtils;
  */
 public class BigDataExpUtil {
 
-	/**
-	 * 压缩后的文件名
-	 */
+	// 压缩后的文件名
 	private String zipFileName;
 	private ResultSet rs;
 	private HttpServletResponse response;
 	private int rowCount = 0;// 总记录数
+	// 每个文件的最大行数 超过请求按默认算
+	private static final int MAXROWS = 50000;
+	// excel文件的前缀
+	private static final String PREFIX = "excelTemp";
+	// excel文件的后缀
+	private static final String SUFFIX = ".xls";
+	// 设置编码格式
+	private static final String ENCODED = "UTF-8";
+	// html文件的头
+	StringBuffer headStr = new StringBuffer()
+			.append("<html xmlns:x=\"urn:schemas-microsoft-com:office:excel\">")
+			.append("<head>")
+			.append("<meta http-equiv=\"content-type\" content=\"application/ms-excel; charset=UTF-8\"/>")
+			.append("<!--[if gte mso 9]><xml>")
+			.append("<x:ExcelWorkbook>")
+			.append("<x:ExcelWorksheets>")
+			.append("<x:ExcelWorksheet>")
+			.append("<x:Name></x:Name>")
+			.append("<x:WorksheetOptions>")
+			.append("<x:Print>")
+			.append("<x:ValidPrinterInfo />")
+			.append("</x:Print>")
+			.append("</x:WorksheetOptions>")
+			.append("</x:ExcelWorksheet>")
+			.append("</x:ExcelWorksheets>")
+			.append("</x:ExcelWorkbook>")
+			.append("</xml><![endif]-->")
+			.append("</head>")
+			.append("<body>")
+			.append("<table>");
+	// html文件的尾
+	StringBuffer footStr = new StringBuffer("</table></body></html>");
 
 	/**
 	 * 构造方法
@@ -60,41 +90,103 @@ public class BigDataExpUtil {
 	}
 
 	/**
-	 * 每个文件的最大行数 超过请求按默认算
+	 * 构造方法
+	 * 
+	 * @param response
+	 *            HttpServletResponse
+	 * @param rs
+	 *            结果集
+	 * @param zipFileName
+	 *            压缩后的文件名，默认为yyyyMMddHHmmss
 	 */
-	private static final int MAXROWS = 50000;
+	public BigDataExpUtil(HttpServletResponse response, String zipFileName) {
+		if (StringUtils.isEmpty(zipFileName)) {
+			SimpleDateFormat format = new SimpleDateFormat("yyyyMMddHHmmss");
+			String string = format.format(new Date());
+			zipFileName = string + ".zip";
+		}
+		this.zipFileName = zipFileName;
+		this.response = response;
+	}
 
 	/**
-	 * excel文件的前缀
+	 * 导出数据并压缩
+	 * 
+	 * <br>
+	 * added by liuyongtao<br>
+	 * 
+	 * @param datas
+	 *            数据源
+	 * @param titles
+	 *            excel表头,格式为：titles[0] = "运单号";
+	 * @param maxRow
+	 *            最大列，默认为5w,最大为5w
+	 * @param fileNamePrefix
+	 *            文件的前缀，不能少于8个字符,默认为excelTemp
+	 * 
+	 * @date 2016年11月30日 上午9:42:34
 	 */
-	private static final String PREFIX = "excelTemp";
+	public void exportToZip(final List<Object[]> datas, final String[] titles, final int maxRow, String fileNamePrefix) {
+		long start = System.currentTimeMillis();
+		System.out.println("导出start");
+		final int max = this.getMaxRows(maxRow);// 每个文件最大行数
+		List<File> fileList = new ArrayList<File>();// 文件收集器
+		int i = 0;// 行数记录器
+		File file = null;// 临时文件
+		FileOutputStream fos = null;// 文件输出流
+		try {
+			for (Object[] obj : datas) {
+				// 达到最大行数 或者 新建的 创建新文件
+				if (i == max || i == 0) {
+					// 如果不是新文件 为这个文件写入文件尾
+					if (file != null) {
+						// 写文件尾
+						this.writeFooterToOutputStream(fos);
+						// 关闭流
+						IOUtils.closeQuietly(fos);
+					}
+					// 创建临时文件
+					file = this.createTempFile(fileNamePrefix);
+					// 打开流
+					fos = FileUtils.openOutputStream(file);
+					// 放进收集器里
+					fileList.add(file);
+					// 写文件头
+					this.writeHeaderToOutputStream(fos);
+					// 数据区标题栏
+					this.writeTitleToOutputStream(titles, fos);
+					i = 0;
+				}
+				i++;
+				rowCount++;// 总记录数
+				// 写实际一行数据
+				this.writeOneRowToOutputStream(obj, fos);
+			}
 
-	/**
-	 * excel文件的后缀
-	 */
-	private static final String SUFFIX = ".xls";
-
-	/**
-	 * 设置编码格式
-	 */
-	private static final String ENCODED = "UTF-8";
-
-	/**
-	 * html文件的头
-	 */
-	StringBuffer headStr = new StringBuffer("<html xmlns:x=\"urn:schemas-microsoft-com:office:excel\">")
-			.append("<head>")
-			.append("<meta http-equiv=\"content-type\" content=\"application/ms-excel; charset=UTF-8\"/>")
-			.append("<!--[if gte mso 9]><xml>").append("<x:ExcelWorkbook>").append("<x:ExcelWorksheets>")
-			.append("<x:ExcelWorksheet>").append("<x:Name></x:Name>").append("<x:WorksheetOptions>")
-			.append("<x:Print>").append("<x:ValidPrinterInfo />").append("</x:Print>").append("</x:WorksheetOptions>")
-			.append("</x:ExcelWorksheet>").append("</x:ExcelWorksheets>").append("</x:ExcelWorkbook>")
-			.append("</xml><![endif]-->").append("</head>").append("<body>").append("<table>");
-
-	/**
-	 * html文件的尾
-	 */
-	StringBuffer footStr = new StringBuffer("</table></body></html>");
+			if (file != null) {
+				// 写文件尾
+				this.writeFooterToOutputStream(fos);
+				// 关闭流
+				IOUtils.closeQuietly(fos);
+			}
+			// 打包
+			this.doZip(fileList);
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} finally {
+			IOUtils.closeQuietly(fos);
+			// 清空临时文件
+			this.cleanTempFile(fileList);
+			fileList.clear();
+			fileList = null;
+		}
+		long end = System.currentTimeMillis();
+		System.out.println("导出end");
+		System.out.println("总记录数：" + rowCount);
+		System.out.println("运行：" + (end - start) + "ms");
+	}
 
 	/**
 	 * 导出数据并压缩
@@ -287,8 +379,7 @@ public class BigDataExpUtil {
 	 * @throws SQLException
 	 * @throws IOException
 	 */
-	private void writeOneRowToOutputStream(String[] title_y, ResultSet rs, FileOutputStream fos) throws SQLException,
-			IOException {
+	private void writeOneRowToOutputStream(String[] title_y, ResultSet rs, FileOutputStream fos) throws SQLException, IOException {
 		// 获取结果集的信息
 		ResultSetMetaData metaData = rs.getMetaData();
 		int leng = title_y.length;
@@ -298,6 +389,32 @@ public class BigDataExpUtil {
 			int type = metaData.getColumnType(i + 1);
 			// 获取指定列的值
 			Object object = this.getTypeObject(rs, type, title_y[i]);
+			// 写入一列
+			this.writeToOutputStream("<td>" + object + "</td>", fos);
+		}
+		this.writeToOutputStream("</tr>", fos);
+	}
+
+	/**
+	 * 一行数据的写入
+	 * 
+	 * <br>
+	 * added by liuyongtao<br>
+	 * 
+	 * @param title_y
+	 *            一行的数据集
+	 * @param fos
+	 * @throws SQLException
+	 * @throws IOException
+	 * 
+	 * @date 2016年11月30日 上午9:47:44
+	 */
+	private void writeOneRowToOutputStream(Object[] title_y, FileOutputStream fos) throws SQLException, IOException {
+		int leng = title_y.length;
+		this.writeToOutputStream("<tr>", fos);
+		for (int i = 0; i < leng; i++) {
+			// 获取指定列的值
+			Object object = title_y[i];
 			// 写入一列
 			this.writeToOutputStream("<td>" + object + "</td>", fos);
 		}
@@ -361,28 +478,28 @@ public class BigDataExpUtil {
 	private Object getTypeObject(ResultSet rs, int type, String column) throws SQLException {
 		Object o = null;
 		switch (type) {
-			case Types.INTEGER:
-				o = rs.getLong(column);
-				break;
-			case Types.DATE:
-				o = rs.getDate(column);
-				break;
-			case Types.TINYINT:
-			case Types.SMALLINT:
-				o = rs.getInt(column);
-				break;
-			case Types.DECIMAL:
-				o = rs.getBigDecimal(column);
-				break;
-			case Types.VARCHAR:
-			case Types.NVARCHAR:
-			case Types.OTHER:
-			case Types.NUMERIC:
-				o = rs.getString(column);
-				break;
-			default:
-				o = rs.getString(column);
-				break;
+		case Types.INTEGER:
+			o = rs.getLong(column);
+			break;
+		case Types.DATE:
+			o = rs.getDate(column);
+			break;
+		case Types.TINYINT:
+		case Types.SMALLINT:
+			o = rs.getInt(column);
+			break;
+		case Types.DECIMAL:
+			o = rs.getBigDecimal(column);
+			break;
+		case Types.VARCHAR:
+		case Types.NVARCHAR:
+		case Types.OTHER:
+		case Types.NUMERIC:
+			o = rs.getString(column);
+			break;
+		default:
+			o = rs.getString(column);
+			break;
 		}
 		return o;
 	}
